@@ -1,4 +1,4 @@
-# OnlneMusicPlayer
+# OnlineMusicPlayer
 
 This code was written by Hunny Arora [ahunny445@gmail.com]
 
