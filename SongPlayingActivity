@@ -1,0 +1,170 @@
+public class SongPlayingActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener {
+
+    private static int oneTimeOnly = 0;
+    SeekBar Song_playing_seekbar;
+    private TextView SongInfoSong, SongInfoArtist;
+    private DatabaseReference mDataRef, mSecondDataRef;
+    private ImageView imageView;
+    private double startTime;
+    private double finalTime;
+    private MediaPlayer mediaPlayer;
+    Runnable run = new Runnable() {
+        public void run() {
+
+            seekUpdation();
+
+
+        }
+    };
+
+
+    //private MediaPlayer mediaPlayer;
+    private boolean isPlaying = false;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_song_playing);
+
+        SongInfoSong = findViewById(R.id.song_info_song);
+        SongInfoArtist = findViewById(R.id.song_info_artist);
+        imageView = findViewById(R.id.image_song_info);
+        startTime = 0;
+        finalTime = getIntent().getDoubleExtra("Duration", 0);
+
+        mediaPlayer = new MediaPlayer();
+
+        Glide.with(getApplicationContext())
+                .load(getIntent().getStringExtra("Image"))
+                .into(imageView);
+
+        // Toast.makeText(this, "" + getIntent().getStringExtra("SongUrl"), Toast.LENGTH_SHORT).show();
+
+
+        SongInfoSong.setText(getIntent().getStringExtra("Name"));
+        SongInfoArtist.setText(getIntent().getStringExtra("Artist"));
+        Song_playing_seekbar = (SeekBar) findViewById(R.id.seekbar);
+        //Toast.makeText(this, "" + getIntent().getDoubleExtra("Duration", 0), Toast.LENGTH_SHORT).show();
+
+
+        if (oneTimeOnly == 0) {
+            Song_playing_seekbar.setMax((int) finalTime);
+        }
+        //Toast.makeText(getApplicationContext(), "" + getIntent().getStringExtra("Name"), Toast.LENGTH_SHORT).show();
+
+        playSong();
+
+    }
+
+    private void seekUpdation() {
+        Song_playing_seekbar.setProgress(mediaPlayer.getCurrentPosition());
+        Song_playing_seekbar.postDelayed(run, 1000);
+    }
+
+    private void playSong() {
+
+        final FirebaseStorage storage = FirebaseStorage.getInstance();
+
+        StorageReference storageReference = storage.getReferenceFromUrl(getIntent().getStringExtra("SongUrl"));
+
+        storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+            @Override
+            public void onSuccess(Uri uri) {
+
+                try {
+                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                    final String url = uri.toString();
+                    mediaPlayer.setDataSource(url);
+                    mediaPlayer.setOnPreparedListener(SongPlayingActivity.this);
+                    mediaPlayer.prepareAsync();
+
+                    //  mediaPlayer.start();
+
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                }
+
+
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.i("TAg", "aFailed");
+            }
+        });
+
+        Song_playing_seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+
+                if (b && mediaPlayer.isPlaying()) {
+                    mediaPlayer.seekTo(i);
+                }
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+    }
+
+
+    //    @Override
+//    public void onPrepared(MediaPlayer mediaPlayer) {
+//
+//        //mediaPlayer.start();
+//
+//        checkIfSongIsPlayingOrNot();
+//
+//        Toast.makeText(this, "" + isPlaying, Toast.LENGTH_SHORT).show();
+//
+//
+//        Song_playing_seekbar.setMax(mediaPlayer.getDuration());
+//
+//        seekUpdation();
+//    }
+//
+    private void checkIfSongIsPlayingOrNot() {
+
+        if (mediaPlayer.isPlaying()) {
+
+            isPlaying = true;
+
+        } else if (!mediaPlayer.isPlaying()) {
+            isPlaying = false;
+        }
+
+    }
+
+
+    @Override
+    public void onPrepared(MediaPlayer mediaPlayer) {
+
+
+        checkIfSongIsPlayingOrNot();
+
+
+        if (isPlaying == false) {
+            mediaPlayer.start();
+
+            Song_playing_seekbar.setMax(mediaPlayer.getDuration());
+
+            seekUpdation();
+
+        }  if (isPlaying == true) {
+            mediaPlayer.stop();
+        }
+
+        // Toast.makeText(SongPlayingActivity.this, "" + isPlaying, Toast.LENGTH_SHORT).show();
+    }
+}
